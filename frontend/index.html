@@ -1,12 +1,190 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Food Waste Reduction</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FoodSave – use it before you lose it</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#EEF2F0;--card:#fff;--ink:#1B2B2A;--mute:#5E6F6D;--line:#D3DCD9;
+--kale:#2E5E4E;--beet:#9B2C4B;--citrus:#E3A21A;--ok:#2E5E4E;--r:6px}
+@media(prefers-color-scheme:dark){:root{--paper:#121B1A;--card:#1B2827;--ink:#E8F0EE;--mute:#9BB0AD;--line:#2D3F3D;--kale:#6FBF9F;--beet:#F08AA5;--citrus:#F0BC4A}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Bricolage Grotesque",system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:clamp(2rem,6vw,3.4rem);line-height:1;margin:0 0 6px;font-weight:800;letter-spacing:-.02em}
+.sub{color:var(--mute);margin:0 0 24px}
+h2{font-size:1.15rem;margin:0 0 12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:24px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.stat b{display:block;font-size:1.7rem;font-weight:800}
+.stat span{color:var(--mute);font-size:.85rem}
+.stat.hot b{color:var(--beet)}
+.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:22px}
+@media(max-width:780px){.grid{grid-template-columns:1fr}}
+section{margin-bottom:26px}
+form{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:14px}
+form .w2{grid-column:span 2}form .w3{grid-column:span 3}form .w6{grid-column:span 6}
+@media(max-width:520px){form .w2,form .w3{grid-column:span 6}}
+label{font-size:.8rem;color:var(--mute);display:block}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);color:var(--ink);font:inherit}
+button{font:inherit;cursor:pointer;border-radius:var(--r);border:1px solid var(--kale);background:var(--kale);color:#fff;padding:8px 14px;font-weight:600}
+@media(prefers-color-scheme:dark){button{color:#10201C}}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--line);font-weight:400;padding:5px 10px;font-size:.85rem}
+button.ghost:hover{border-color:var(--kale)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--citrus);outline-offset:2px}
+.item{display:grid;grid-template-columns:64px 1fr;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:8px;padding:10px 12px;align-items:center}
+.days{text-align:center;border-radius:var(--r);padding:6px 0;font-weight:800;line-height:1.1;background:var(--paper);border:2px solid var(--kale);color:var(--kale)}
+.days small{display:block;font-weight:400;font-size:.7rem}
+.days.soon{border-color:var(--citrus);color:var(--ink);background:color-mix(in srgb,var(--citrus) 22%,transparent)}
+.days.hot{border-color:var(--beet);color:var(--beet)}
+.item h3{margin:0;font-size:1rem}.meta{color:var(--mute);font-size:.82rem}
+.acts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;margin-bottom:8px}
+.card h3{margin:0 0 2px;font-size:1rem}
+.empty{color:var(--mute);padding:12px;border:1px dashed var(--line);border-radius:var(--r)}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:var(--r);display:none}
+</style>
+</head>
+<body>
+<main>
+  <h1>FoodSave</h1>
+  <p class="sub">Track what's in your kitchen, cook what's about to expire, share what you can't finish.</p>
+
+  <div class="stats" id="stats" aria-live="polite"></div>
+
+  <div class="grid">
+    <div>
+      <section>
+        <h2>Add to your kitchen</h2>
+        <form id="addForm">
+          <div class="w3"><label for="name">Food</label><input id="name" required maxlength="80" placeholder="Tomatoes"></div>
+          <div class="w3"><label for="exp">Use by</label><input id="exp" type="date" required></div>
+          <div class="w2"><label for="qty">Amount</label><input id="qty" type="number" min="0.1" step="any" value="1"></div>
+          <div class="w2"><label for="unit">Unit</label>
+            <select id="unit"><option>pcs</option><option>kg</option><option>g</option><option>L</option><option>pack</option></select></div>
+          <div class="w2"><label for="cost">Cost (₹)</label><input id="cost" type="number" min="0" step="any" value="0"></div>
+          <div class="w6"><button type="submit">Add item</button></div>
+        </form>
+      </section>
+      <section>
+        <h2>In your kitchen, soonest expiry first</h2>
+        <div id="items"></div>
+      </section>
+    </div>
+
+    <div>
+      <section>
+        <h2>Cook these first</h2>
+        <div id="recipes"></div>
+      </section>
+      <section>
+        <h2>Free food nearby</h2>
+        <div id="donations"></div>
+        <details style="margin-top:10px"><summary>Offer food to neighbours</summary>
+          <form id="donForm" style="margin-top:8px">
+            <div class="w3"><label for="dn">Food</label><input id="dn" required></div>
+            <div class="w3"><label for="dq">Amount</label><input id="dq" required placeholder="2 kg"></div>
+            <div class="w3"><label for="dl">Pickup area</label><input id="dl" required></div>
+            <div class="w3"><label for="dc">Phone or email</label><input id="dc" required minlength="3"></div>
+            <div class="w6"><button type="submit">Post offer</button></div>
+          </form>
+        </details>
+      </section>
+    </div>
+  </div>
+</main>
+<div id="toast" role="status"></div>
+
+<script>
+const API = location.port === "8000" || location.protocol==="file:" ? (location.protocol==="file:" ? "http://localhost:8000" : "") : "http://localhost:8000";
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+async function api(path, method="GET", body){
+  const r = await fetch(API + path, {method, headers:{"Content-Type":"application/json"}, body: body ? JSON.stringify(body) : undefined});
+  if(!r.ok){ const e = await r.json().catch(()=>({})); throw new Error(e.detail || "Request failed"); }
+  return r.json();
+}
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.style.display="block"; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none",2400); }
+
+function dayLabel(n){ return n<0 ? [Math.abs(n),"days over"] : n===0 ? ["Today",""] : [n, n===1?"day left":"days left"]; }
+
+async function load(){
+  try{
+    const [items, stats, recipes, dons] = await Promise.all([api("/api/items"), api("/api/stats"), api("/api/recipes"), api("/api/donations")]);
+    renderStats(stats); renderItems(items); renderRecipes(recipes); renderDonations(dons);
+  }catch(e){ toast("Can't reach the server. Is the backend running?"); }
+}
+
+function renderStats(s){
+  $("stats").innerHTML = `
+    <div class="stat ${s.expiring_soon?'hot':''}"><b>${s.expiring_soon}</b><span>expire within 3 days</span></div>
+    <div class="stat"><b>${s.active}</b><span>items in your kitchen</span></div>
+    <div class="stat"><b>₹${s.money_saved}</b><span>saved by using or donating</span></div>
+    <div class="stat ${s.wasted?'hot':''}"><b>₹${s.money_wasted}</b><span>wasted so far</span></div>
+    <div class="stat"><b>${s.save_rate===null?'–':s.save_rate+'%'}</b><span>of finished food saved</span></div>`;
+}
+
+function renderItems(items){
+  if(!items.length){ $("items").innerHTML = `<p class="empty">Nothing here yet. Add what's in your fridge to start tracking.</p>`; return; }
+  $("items").innerHTML = items.map(i=>{
+    const cls = i.days_left<=1 ? "hot" : i.days_left<=3 ? "soon" : "";
+    const [big, small] = dayLabel(i.days_left);
+    return `<article class="item">
+      <div class="days ${cls}">${big}<small>${small}</small></div>
+      <div><h3>${esc(i.name)}</h3>
+        <div class="meta">${i.quantity} ${esc(i.unit)} · use by ${i.expires_on}${i.cost?` · ₹${i.cost}`:""}</div>
+        <div class="acts">
+          <button class="ghost" onclick="closeItem(${i.id},'used')">Used it</button>
+          <button class="ghost" onclick="offer(${i.id},'${esc(i.name).replace(/'/g,"")}','${i.quantity} ${esc(i.unit)}')">Give away</button>
+          <button class="ghost" onclick="closeItem(${i.id},'wasted')">Threw out</button>
+        </div></div></article>`;
+  }).join("");
+}
+
+function renderRecipes(r){
+  $("recipes").innerHTML = r.length ? r.map(x=>`<div class="card"><h3>${esc(x.title)}</h3>
+    <div class="meta">${x.time} · uses your ${x.uses_expiring.map(esc).join(", ")}</div></div>`).join("")
+    : `<p class="empty">Add food that expires in the next 5 days and recipe ideas will show up here.</p>`;
+}
+
+function renderDonations(d){
+  $("donations").innerHTML = d.length ? d.map(x=>`<div class="card"><h3>${esc(x.item_name)} · ${esc(x.quantity)}</h3>
+    <div class="meta">${esc(x.location)} · ${esc(x.contact)}</div>
+    <div class="acts"><button class="ghost" onclick="claim(${x.id})">I'll take it</button></div></div>`).join("")
+    : `<p class="empty">No offers right now. Post one if you have extra food.</p>`;
+}
+
+async function closeItem(id,status){
+  try{ await api(`/api/items/${id}/close`,"POST",{status}); toast(status==="wasted"?"Logged as thrown out":"Marked as "+status); load(); }
+  catch(e){ toast(e.message); }
+}
+async function offer(id,name,qty){
+  const location = prompt("Pickup area for "+name+"?"); if(!location) return;
+  const contact = prompt("Phone or email for pickup?"); if(!contact) return;
+  try{ await api("/api/donations","POST",{item_name:name,quantity:qty,location,contact,item_id:id}); toast("Posted for neighbours"); load(); }
+  catch(e){ toast(e.message); }
+}
+async function claim(id){ try{ await api(`/api/donations/${id}/claim`,"POST"); toast("Claimed. Contact the giver to pick up."); load(); }catch(e){ toast(e.message); } }
+
+$("addForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  try{
+    await api("/api/items","POST",{name:$("name").value,expires_on:$("exp").value,quantity:+$("qty").value,unit:$("unit").value,cost:+$("cost").value||0});
+    e.target.reset(); $("qty").value=1; $("cost").value=0; toast("Added"); load();
+  }catch(err){ toast(err.message); }
+});
+$("donForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  try{
+    await api("/api/donations","POST",{item_name:$("dn").value,quantity:$("dq").value,location:$("dl").value,contact:$("dc").value});
+    e.target.reset(); toast("Offer posted"); load();
+  }catch(err){ toast(err.message); }
+});
+$("exp").min = new Date().toISOString().slice(0,10);
+load();
+</script>
+</body>
 </html>
